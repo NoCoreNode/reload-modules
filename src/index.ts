@@ -78,7 +78,10 @@ export default class Reloader {
             }
         }
         this.updateFileMap(Object.assign(this.fileMap, newFileMap));
-        return errors;
+        return {
+            reloadModules: Array.from(reloadModules),
+            errors,
+        };
     }
 
     updateFileMap(fileMap: IFileMap) {
