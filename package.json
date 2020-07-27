@@ -5,7 +5,7 @@
   "keywords": [],
   "main": "dist/reload-modules.umd.js",
   "module": "dist/reload-modules.es5.js",
-  "typings": "dist/types/reload-modules.d.ts",
+  "typings": "dist/types/index.d.ts",
   "files": [
     "dist"
   ],
