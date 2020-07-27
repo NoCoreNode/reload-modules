@@ -10,7 +10,7 @@ interface IFileMap {
     [fileName: string]: string;
 }
 
-interface IOptions {
+export interface IOptions {
 
     /* 项目所在根目录 */
     context: string;
