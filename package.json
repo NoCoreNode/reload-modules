@@ -1,6 +1,6 @@
 {
   "name": "reload-modules",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "reload nodejs modules with delcache",
   "keywords": [],
   "main": "dist/reload-modules.umd.js",
@@ -59,7 +59,9 @@
       "text",
       "lcov"
     ],
-    "include": ["src/index.ts"]
+    "include": [
+      "src/index.ts"
+    ]
   },
   "devDependencies": {
     "@commitlint/cli": "^7.1.2",
