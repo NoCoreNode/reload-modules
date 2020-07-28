@@ -63,20 +63,19 @@ export default class Reloader {
         for (const [name, item] of Object.entries(newFileMap)) {
             const hasKey = name in this.fileMap;
             const md5 = this.getKey(item);
-            if (hasKey && this.getKey(this.fileMap[name]) !== md5 && this.filter(name)) {
+            if (hasKey && this.getKey(this.fileMap[name]) !== md5 && this.filter.call(this, name)) {
                 const parents = this.getParents(item);
                 if (parents.length > 0) {
                     parents.forEach(filename => reloadModules.add(join(this.context, filename)));
                 }
-                else {
-                    reloadModules.add(join(this.context, name));
-                }
+                reloadModules.add(join(this.context, name));
             }
         }
 
         // 删除缓存
         batchdelcache(
-            Array.from(reloadModules)
+            Array.from(reloadModules),
+            true, this.commonRootPath
         );
 
         /* istanbul ignore next */

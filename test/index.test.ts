@@ -62,7 +62,7 @@ describe('Reloader test', () => {
         expect(require('./fixtures/mod2').num).to.be.equal(2);
     });
 
-    it('reload success', () => {
+    it('reload success with parents', () => {
         require('./fixtures/mainModule');
 
         const reloader = new Reloader({
@@ -94,7 +94,7 @@ describe('Reloader test', () => {
         });
 
         expect(errors.length).to.be.equal(0);
-        expect(reloadModules.length).to.be.equal(1);
+        expect(reloadModules.length).to.be.equal(2);
         expect(reloadModules.includes(resolve(__dirname, './fixtures/mod2.js'))).to.be.equal(true);
         expect(require('./fixtures/mod2').num).to.be.equal(2);
         expect(require('./fixtures/mod3').num).to.be.equal(3);
