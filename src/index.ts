@@ -7,8 +7,13 @@ import {join} from 'path';
 import batchdelcache from 'batchdelcache';
 
 interface IFileMap {
-    [fileName: string]: string;
+    [fileName: string]: IFileMapItem;
 }
+
+type IFileMapItem = string | {
+    key: string;
+    parents?: string[];
+};
 
 export interface IOptions {
 
@@ -52,18 +57,33 @@ export default class Reloader {
     }
 
     reload(newFileMap: IFileMap) {
+
         const reloadModules = new Set<string>();
-        for (const [name, md5] of Object.entries(newFileMap)) {
-            if (this.filter(name) && (name in this.fileMap) && this.fileMap[name] !== md5) {
-                reloadModules.add(require.resolve(join(this.context, name)));
+
+        for (const [name, item] of Object.entries(newFileMap)) {
+            const hasKey = name in this.fileMap;
+            const md5 = this.getKey(item);
+            if (hasKey && this.getKey(this.fileMap[name]) !== md5 && this.filter(name)) {
+                const parents = this.getParents(item);
+                if (parents.length > 0) {
+                    parents.forEach(filename => reloadModules.add(join(this.context, filename)));
+                }
+                else {
+                    reloadModules.add(join(this.context, name));
+                }
             }
         }
+
+        // 删除缓存
         batchdelcache(
             Array.from(reloadModules)
         );
+
+        /* istanbul ignore next */
         if (typeof global.gc === 'function') {
             global.gc();
         }
+
         const errors: IError[] = [];
         for (const mod of reloadModules) {
             try {
@@ -77,7 +97,9 @@ export default class Reloader {
                 });
             }
         }
+
         this.updateFileMap(Object.assign(this.fileMap, newFileMap));
+
         return {
             reloadModules: Array.from(reloadModules),
             errors,
@@ -87,6 +109,23 @@ export default class Reloader {
     updateFileMap(fileMap: IFileMap) {
         this.fileMap = fileMap;
         this.updateFiles();
+    }
+
+    private getKey(item: IFileMapItem): string {
+        if (typeof item === 'string') {
+            return item;
+        }
+        else if (item) {
+            return item.key;
+        }
+        return '';
+    }
+
+    private getParents(item: IFileMapItem): string[] {
+        if (typeof item === 'object' && item.parents) {
+            return item.parents;
+        }
+        return [];
     }
 
     private updateFiles() {
