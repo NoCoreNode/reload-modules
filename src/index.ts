@@ -3,7 +3,7 @@
  * @author cxtom(cxtom2008@gmail.com)
  */
 
-import {join} from 'path';
+import {join, sep} from 'path';
 import batchdelcache from 'batchdelcache';
 
 interface IFileMap {
@@ -65,26 +65,31 @@ export default class Reloader {
             const md5 = this.getKey(item);
             if (hasKey && this.getKey(this.fileMap[name]) !== md5 && this.filter.call(this, name)) {
                 const parents = this.getParents(item);
-                if (parents.length > 0) {
-                    parents.forEach(filename => reloadModules.add(join(this.context, filename)));
+                const prevParents = this.getParents(this.fileMap[name]);
+                if (parents.length > 0 || prevParents.length > 0) {
+                    [...parents, ...prevParents].forEach(filename => reloadModules.add(join(this.context, filename)));
                 }
                 reloadModules.add(join(this.context, name));
             }
         }
 
-        // 删除缓存
-        batchdelcache(
-            Array.from(reloadModules),
-            true, this.commonRootPath
-        );
+        const modulesToReload = Array.from(reloadModules);
 
-        /* istanbul ignore next */
-        if (typeof global.gc === 'function') {
-            global.gc();
+        if (modulesToReload.length > 0) {
+            // 删除缓存
+            batchdelcache(
+                modulesToReload,
+                true, this.commonRootPath
+            );
+
+            /* istanbul ignore next */
+            if (typeof global.gc === 'function') {
+                global.gc();
+            }
         }
 
         const errors: IError[] = [];
-        for (const mod of reloadModules) {
+        for (const mod of modulesToReload) {
             try {
                 // eslint-disable-next-line @typescript-eslint/no-require-imports
                 require(mod);
@@ -100,7 +105,7 @@ export default class Reloader {
         this.updateFileMap(Object.assign(this.fileMap, newFileMap));
 
         return {
-            reloadModules: Array.from(reloadModules),
+            reloadModules: modulesToReload.map(a => a.replace(this.context + sep, '')),
             errors,
         };
     }
