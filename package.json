@@ -108,6 +108,6 @@
     "typescript": "^3.9.0"
   },
   "dependencies": {
-    "batchdelcache": "0.0.3"
+    "batchdelcache": "^1.0.0"
   }
 }
