@@ -56,6 +56,25 @@ export default class Reloader {
         this.updateFiles();
     }
 
+    reloadAll(newFileMap: IFileMap) {
+        const reloadModules = new Set<string>();
+        for (const [name] of Object.entries(this.fileMap)) {
+            const moduleId = require.resolve(join(this.context, name));
+            if (require.cache[moduleId]) {
+                reloadModules.add(moduleId);
+            }
+        }
+        const modulesToReload = Array.from(reloadModules);
+        if (modulesToReload.length > 0) {
+            this.del(modulesToReload);
+        }
+        this.updateFileMap(Object.assign(this.fileMap, newFileMap));
+        return {
+            reloadModules: modulesToReload.map(a => a.replace(this.context + sep, '')),
+            errors: [],
+        };
+    }
+
     reload(newFileMap: IFileMap) {
 
         const reloadModules = new Set<string>();
@@ -75,30 +94,23 @@ export default class Reloader {
 
         const modulesToReload = Array.from(reloadModules);
 
-        if (modulesToReload.length > 0) {
-            // 删除缓存
-            batchdelcache(
-                modulesToReload,
-                true, this.commonRootPath
-            );
-
-            /* istanbul ignore next */
-            if (typeof global.gc === 'function') {
-                global.gc();
-            }
-        }
-
         const errors: IError[] = [];
-        for (const mod of modulesToReload) {
-            try {
-                // eslint-disable-next-line @typescript-eslint/no-require-imports
-                require(mod);
-            }
-            catch (e) {
-                errors.push({
-                    file: mod,
-                    code: 1,
-                });
+
+        if (modulesToReload.length > 0) {
+
+            this.del(modulesToReload);
+
+            for (const mod of modulesToReload) {
+                try {
+                    // eslint-disable-next-line @typescript-eslint/no-require-imports
+                    require(mod);
+                }
+                catch (e) {
+                    errors.push({
+                        file: mod,
+                        code: 1,
+                    });
+                }
             }
         }
 
@@ -113,6 +125,19 @@ export default class Reloader {
     updateFileMap(fileMap: IFileMap) {
         this.fileMap = fileMap;
         this.updateFiles();
+    }
+
+    private del(modulesToReload: string[]) {
+        // 删除缓存
+        batchdelcache(
+            modulesToReload,
+            true, this.commonRootPath
+        );
+
+        /* istanbul ignore next */
+        if (typeof global.gc === 'function') {
+            global.gc();
+        }
     }
 
     private getKey(item: IFileMapItem): string {
