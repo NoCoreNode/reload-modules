@@ -62,6 +62,29 @@ describe('Reloader test', () => {
         expect(require('./fixtures/mod2').num).to.be.equal(2);
     });
 
+    it('reload all success', () => {
+        require('./fixtures/mainModule');
+
+        const reloader = new Reloader({
+            context: resolve(__dirname, './fixtures'),
+            commonRootPath: resolve(__dirname, './fixtures/mainModule.js'),
+            filterAll: (id) => id.endsWith('fixtures/mod1.js')
+        });
+
+        require('./fixtures/mod1').num++;
+        require('./fixtures/mod2').num++;
+
+        expect(require('./fixtures/mod1').num).to.be.equal(2);
+        expect(require('./fixtures/mod2').num).to.be.equal(3);
+
+        let {errors, reloadModules} = reloader.reloadAll();
+
+        expect(errors.length).to.be.equal(0);
+        expect(reloadModules.length).to.be.equal(1);
+        expect(require('./fixtures/mod1').num).to.be.equal(1);
+        expect(require('./fixtures/mod2').num).to.be.equal(3);
+    });
+
     it('reload success with parents', () => {
         require('./fixtures/mainModule');
 

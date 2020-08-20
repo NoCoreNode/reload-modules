@@ -21,10 +21,13 @@ export interface IOptions {
     context: string;
 
     /* 每个模块文件所对应的 md5 */
-    fileMap: IFileMap;
+    fileMap?: IFileMap;
 
-    /* 过滤器，过滤需要 reload 的模块 */
+    /* 过滤器，调用 reload 时过滤需要 reload 的模块 */
     filter?: (file: string) => boolean;
+
+    /* 过滤器，调用 reloadAll 时过滤需要 reload 的模块 */
+    filterAll?: (file: string) => boolean;
 
     commonRootPath?: string;
 }
@@ -40,6 +43,7 @@ export default class Reloader {
     fileMap: IFileMap = {};
     filter: (file: string) => boolean;
     commonRootPath: string;
+    filterAll: (file: string) => boolean;
 
     files: string[] = [];
 
@@ -52,15 +56,18 @@ export default class Reloader {
         if (options.filter) {
             this.filter = options.filter;
         }
+        this.filterAll = (() => false);
+        if (options.filterAll) {
+            this.filterAll = options.filterAll;
+        }
         this.commonRootPath = options.commonRootPath || '';
         this.updateFiles();
     }
 
-    reloadAll(newFileMap: IFileMap) {
+    reloadAll() {
         const reloadModules = new Set<string>();
-        for (const [name] of Object.entries(this.fileMap)) {
-            const moduleId = require.resolve(join(this.context, name));
-            if (require.cache[moduleId]) {
+        for (const moduleId of Object.keys(require.cache)) {
+            if (this.filterAll(moduleId)) {
                 reloadModules.add(moduleId);
             }
         }
@@ -68,9 +75,8 @@ export default class Reloader {
         if (modulesToReload.length > 0) {
             this.del(modulesToReload);
         }
-        this.updateFileMap(Object.assign(this.fileMap, newFileMap));
         return {
-            reloadModules: modulesToReload.map(a => a.replace(this.context + sep, '')),
+            reloadModules: modulesToReload,
             errors: [],
         };
     }
