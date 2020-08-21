@@ -26,9 +26,6 @@ export interface IOptions {
     /* 过滤器，调用 reload 时过滤需要 reload 的模块 */
     filter?: (file: string) => boolean;
 
-    /* 过滤器，调用 reloadAll 时过滤需要 reload 的模块 */
-    filterAll?: (file: string) => boolean;
-
     commonRootPath?: string;
 }
 
@@ -43,7 +40,6 @@ export default class Reloader {
     fileMap: IFileMap = {};
     filter: (file: string) => boolean;
     commonRootPath: string;
-    filterAll: (file: string) => boolean;
 
     files: string[] = [];
 
@@ -56,18 +52,14 @@ export default class Reloader {
         if (options.filter) {
             this.filter = options.filter;
         }
-        this.filterAll = (() => false);
-        if (options.filterAll) {
-            this.filterAll = options.filterAll;
-        }
         this.commonRootPath = options.commonRootPath || '';
         this.updateFiles();
     }
 
-    reloadAll() {
+    reloadAll(filter: (file: string) => boolean) {
         const reloadModules = new Set<string>();
         for (const moduleId of Object.keys(require.cache)) {
-            if (this.filterAll(moduleId)) {
+            if (filter(moduleId)) {
                 reloadModules.add(moduleId);
             }
         }
